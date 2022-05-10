@@ -1,0 +1,138 @@
+﻿@page "/"
+@using Epitec_Assignment.Data
+@using Microsoft.EntityFrameworkCore
+@using System.Collections.Generic
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Nav
+@inject IDbContextFactory<ContactContext> CContextFactory
+
+<PageTitle>Contacts</PageTitle>
+
+<h1>Contacts</h1>
+@if(contacts == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+<table class="table table-borded table-hover">
+    <thead>
+        <tr>
+            <th class="sort-th">Last Name</th>
+            <th class="sort-th">First Name</th>
+            <th>Phone Number</th>
+            <th>Birth Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var contact in contacts)
+        {
+        <tr>
+            <td>@contact.LastName</td>
+            <td>@contact.FirstName</td>
+            <td>@contact.PhoneNumber</td>
+            <td>@contact.BirthDate.ToShortDateString()</td>
+            <td>
+                <button class="btn btn-danger"
+                    @onclick ="(() => DeleteContact(contact))" >Delete</button>
+                <button class="btn btn-success"
+                    @onclick ="(() => EditContact(contact.Id))">Edit</button>
+            </td>
+        </tr>
+        }
+    </tbody>
+</table>
+}
+<button class="btn btn-primary" @onclick ="(() => AddContact())">Add Contact</button>
+
+@code {
+    private Contact[]? contacts;
+    private bool loading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (loading)
+        {
+            return;
+        }
+        try
+        {
+            loading = true;
+            using(var ctx = CContextFactory.CreateDbContext())
+            {
+                contacts = await ctx.Contacts.ToArrayAsync();
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+        finally
+        {
+            loading = false;
+        }
+
+    }
+
+    protected async void DeleteContact(Contact contact)
+    {
+        if (loading){
+            return;
+        }
+        try
+        {
+            loading = true;
+            using(var ctx = CContextFactory.CreateDbContext())
+            {
+                ctx.Contacts.Remove(contact);
+                await ctx.SaveChangesAsync();
+                Nav.NavigateTo("/", forceLoad: true);
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+
+        }
+        finally
+        {
+            loading = false;
+        }
+
+    }
+    private void EditContact(Guid contactId)
+    {
+        Nav.NavigateTo("/edit/" + contactId);
+    }
+    private void AddContact()
+    {
+        Nav.NavigateTo("/add");
+    }
+
+    /**
+    private string last = "Last Name";
+    private string first = "First Name";
+
+    private async void SortTable(String ColumnName)
+    {
+        if(ColumnName == "First Name")
+        {
+            List<Contact> ContactList = new List<Contact>();
+            ContactList = contacts.ToList();
+            ContactList = contacts.OrderBy(o=>o.FirstName).ToList();
+            contacts = ContactList.ToArray();
+            Nav.NavigateTo("/", forceLoad: true);
+            StateHasChanged();
+        }
+        else if(ColumnName == "Last Name"){
+            List<Contact> ContactList = new List<Contact>();
+            ContactList = contacts.ToList();
+            ContactList = contacts.OrderBy(o=>o.LastName).ToList();
+            contacts = ContactList.ToArray();
+            Nav.NavigateTo("/", forceLoad: true);
+            StateHasChanged();
+        }
+    }
+    **/
+}
